@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/*.log
+.streamlit/*.err
+.streamlit/share_url.txt
+
+# Runtime data (generated — not source)
+data/users.db
+data/weather_mock.json
+data/weather_live.json
+data/forecast_result.json
+data/forecast_actual.jsonl
+models/*.pkl
+
+# Debug / temp files
+_*.py
+_*.txt
+_*.log
+*.tmp
+runout.txt
+brainstorming.txt
+start_share.bat
+
+# Backups
+_backup/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
