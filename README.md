@@ -52,6 +52,27 @@ Règle de l'homme aveugle : chaque niveau ne voit que ce qui est sous lui.
 
 ## Installation
 
+### Docker (recommandé)
+
+```bash
+git clone https://github.com/khalilmhir6-alt/steg-solaire.git
+cd steg-solaire
+docker compose up --build
+```
+
+L'app est accessible sur **http://localhost:8501**.
+
+### Mise à jour
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+Le volume `steg-data` (users.db, forecasts) est préservé entre les rebuilds.
+
+### Sans Docker
+
 ```bash
 pip install -r requirements.txt
 streamlit run app.py

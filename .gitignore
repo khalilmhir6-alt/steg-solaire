@@ -19,7 +19,7 @@ data/weather_mock.json
 data/weather_live.json
 data/forecast_result.json
 data/forecast_actual.jsonl
-models/*.pkl
+# models trained artifacts are tracked (lgbm_correction.pkl ships with repo)
 
 # Debug / temp files
 _*.py
