@@ -148,6 +148,7 @@ def login_ui():
         if user:
             st.session_state["user"] = user
             st.session_state["global_scope"] = auth.scope_of(user)
+            st.session_state["dashboard_loaded"] = False
             st.rerun()
         else:
             st.error("Identifiants invalides.")

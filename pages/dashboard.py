@@ -11,6 +11,18 @@ from datetime import datetime
 
 
 def render():
+    if not st.session_state.get("dashboard_loaded"):
+        logo = asset_uri("assets/steg_logo.png", "image/png")
+        st.markdown(
+            f'<div class="steg-loading-overlay">'
+            f'<img src="{logo}" alt="STEG">'
+            f'<div class="steg-loading-text">Chargement...</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        st.session_state["dashboard_loaded"] = True
+        st.rerun()
+
     st.markdown("""
     <div class="steg-subnav">
       <a href="#section-production">Production</a>
@@ -97,8 +109,7 @@ def render():
         )
 
     st.markdown('<div id="section-production" class="section-anchor"></div>', unsafe_allow_html=True)
-    with st.spinner("Chargement..."):
-        production_dashboard()
+    production_dashboard()
 
     st.markdown('<div id="section-cible" class="section-anchor"></div>', unsafe_allow_html=True)
 
