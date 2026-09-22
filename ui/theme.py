@@ -264,9 +264,11 @@ def steg_loading_css():
     st.markdown(f"""
 <style>
 @keyframes steg-pulse {{
-  0%   {{ opacity: 0.55; transform: scale(0.94); }}
-  50%  {{ opacity: 1.0;  transform: scale(1.06); }}
-  100% {{ opacity: 0.55; transform: scale(0.94); }}
+  0%   {{ transform: translateX(-12px); }}
+  25%  {{ transform: translateX(12px); }}
+  50%  {{ transform: translateX(-8px); }}
+  75%  {{ transform: translateX(8px); }}
+  100% {{ transform: translateX(-12px); }}
 }}
 @keyframes steg-fadein {{
   from {{ opacity: 0; transform: translateY(8px); }}
@@ -285,7 +287,7 @@ def steg_loading_css():
 }}
 [data-testid="stSpinner"] svg {{
   width: 100px !important; height: 100px !important;
-  animation: steg-pulse 1.5s ease-in-out infinite !important;
+  animation: steg-pulse 1.2s ease-in-out infinite !important;
   content: url("{logo}") !important;
   fill: none !important;
 }}
