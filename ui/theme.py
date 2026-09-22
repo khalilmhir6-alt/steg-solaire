@@ -90,22 +90,44 @@ button[kind="primary"]:hover, [data-testid="stBaseButton-primary"]:hover {{
   position: sticky; top: 0; z-index: 9999;
   align-items: center;
   background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%);
-  padding: 0 24px; height: 52px;
+  padding: 0 24px; height: 68px;
   box-shadow: 0 2px 8px rgba(11,61,145,0.25);
+  margin-left: calc(-50vw + 50%) !important;
+  margin-right: calc(-50vw + 50%) !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  border-radius: 0 !important;
 }}
 [data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stColumn"] {{
   display: flex; align-items: center;
 }}
-[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-tertiary"] {{
-  color: rgba(255,255,255,0.85) !important; font-weight: 600;
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stElementContainer"],
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stMarkdownContainer"] {{
+  margin-top: 0 !important; margin-bottom: 0 !important;
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stMarkdownContainer"] {{
+  display: flex !important; align-items: center !important;
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-tertiary"],
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-tertiary"] span,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-tertiary"] div,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-tertiary"] p {{
+  color: #ffffff !important; font-weight: 700 !important;
+  font-size: 19px !important;
 }}
 [data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-tertiary"]:hover {{
   background: rgba(255,255,255,0.15) !important;
 }}
 [data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-primary"] {{
   background: #ffffff !important; border: 1px solid #ffffff !important;
-  color: {STEG_BLUE} !important; font-weight: 700 !important;
   border-radius: 999px !important; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-primary"],
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-primary"] span,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-primary"] div,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stBaseButton-primary"] p {{
+  color: {STEG_BLUE} !important; font-weight: 700 !important;
+  font-size: 19px !important;
 }}
 [data-testid="stTextInputField"], [data-testid="stNumberInputField"],
   [data-testid="stTextAreaField"], [data-testid="stMultiSelectBase"] {{
@@ -198,12 +220,17 @@ header[data-testid="stHeader"] {{ display: none !important; }}
 [data-testid="stMain"] {{ padding-top: 0 !important; }}
 .steg-topbar-brand {{
   display: flex; align-items: center; gap: 10px;
+  line-height: 1;
 }}
-.steg-topbar-brand img {{ height: 26px; }}
+.steg-topbar-brand img {{
+  display: block; height: 30px; flex-shrink: 0;
+}}
 .steg-topbar-brand span {{
-  font-size: 15px; font-weight: 700; color: #fff; letter-spacing: .3px;
+  display: inline-flex; align-items: center; line-height: 1;
+  font-size: 19px; font-weight: 700; color: #fff; letter-spacing: .3px;
   white-space: nowrap;
 }}
+
 .steg-subnav {{
   display: flex; justify-content: center; gap: 8px; padding: 12px 24px;
   background: #f0f4fa; border-bottom: 1px solid #e3e8f0;
@@ -219,6 +246,47 @@ header[data-testid="stHeader"] {{ display: none !important; }}
   box-shadow: 0 2px 6px rgba(11,61,145,0.20);
 }}
 .section-anchor {{ scroll-margin-top: 60px; }}
+.steg-footer {{
+  text-align: center; color: #5b6478;
+  font-size: 0.75rem; line-height: 1.4;
+  padding: 12px 0 20px 0;
+  border-top: 1px solid #e3e8f0;
+  margin-top: 2.5rem;
+}}
+.steg-footer .steg-footer-version {{ font-weight: 600; color: {STEG_BLUE}; }}
+</style>
+""", unsafe_allow_html=True)
+
+
+def steg_loading_css():
+    """Inject the CSS for the full-viewport loading overlay (pulsing STEG logo)."""
+    logo = asset_uri("assets/steg_logo.png", "image/png")
+    st.markdown(f"""
+<style>
+@keyframes steg-pulse {{
+  0%   {{ opacity: 0.55; transform: scale(0.94); }}
+  50%  {{ opacity: 1.0;  transform: scale(1.06); }}
+  100% {{ opacity: 0.55; transform: scale(0.94); }}
+}}
+@keyframes steg-fadein {{
+  from {{ opacity: 0; transform: translateY(8px); }}
+  to   {{ opacity: 1; transform: translateY(0); }}
+}}
+.steg-loading-overlay {{
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}}
+.steg-loading-overlay img {{
+  width: 100px; height: auto; object-fit: contain;
+  animation: steg-pulse 1.5s ease-in-out infinite;
+}}
+.steg-loading-overlay .steg-loading-text {{
+  color: rgba(255,255,255,0.85); font-size: 1rem;
+  margin-top: 18px; letter-spacing: 0.5px;
+  animation: steg-fadein 0.8s ease-out both;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -229,6 +297,21 @@ def render_nav():
 <div class="steg-topbar-brand">
   <img src="{brand}" alt="STEG">
   <span>STEG Solaire</span>
+</div>
+"""
+
+
+APP_VERSION = "1.0"
+
+
+def render_footer():
+    """Minimal internal footer: version + current date. Nothing else."""
+    import datetime
+    today = datetime.date.today().strftime("%d/%m/%Y")
+    return f"""
+<div class="steg-footer">
+  <span class="steg-footer-version">STEG Solaire v{APP_VERSION}</span>
+  &nbsp;&nbsp;·&nbsp;&nbsp; Mis à jour le {today}
 </div>
 """
 

@@ -8,12 +8,13 @@ Run:  streamlit run app.py
 
 import streamlit as st
 from ui import auth
-from ui.theme import render_css, render_nav
+from ui.theme import render_css, render_nav, steg_loading_css, render_footer
 from pages import dashboard, alertes, admin, panneaux, parametres
 
 st.set_page_config(page_title="STEG Solaire", page_icon="assets/steg_favicon.png", layout="wide")
 
 render_css()
+steg_loading_css()
 
 # ---------------------------------------------------------------------------
 # Auth
@@ -147,6 +148,7 @@ def login_ui():
         if user:
             st.session_state["user"] = user
             st.session_state["global_scope"] = auth.scope_of(user)
+            st.session_state["dashboard_loaded"] = False
             st.rerun()
         else:
             st.error("Identifiants invalides.")
@@ -204,3 +206,5 @@ with top_cols[5]:
         st.switch_page(PAGE_PARAMETRES)
 
 pg.run()
+
+st.markdown(render_footer(), unsafe_allow_html=True)
