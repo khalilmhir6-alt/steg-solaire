@@ -35,10 +35,9 @@ def render():
             return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
                                          force_weather=n > 0, username=u)
 
-        with st.spinner("Chargement..."):
-            res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
-                                    datetime.now().minute // 5, False,
-                                    st.session_state["user"]["username"])
+        res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
+                                datetime.now().minute // 5, False,
+                                st.session_state["user"]["username"])
 
         fut = res["future"]
         now = pd.Timestamp.now(tz="Africa/Tunis")
@@ -98,7 +97,8 @@ def render():
         )
 
     st.markdown('<div id="section-production" class="section-anchor"></div>', unsafe_allow_html=True)
-    production_dashboard()
+    with st.spinner("Chargement..."):
+        production_dashboard()
 
     st.markdown('<div id="section-cible" class="section-anchor"></div>', unsafe_allow_html=True)
 
