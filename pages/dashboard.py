@@ -1,7 +1,7 @@
 import streamlit as st
 from ui.theme import (STEG_BLUE, STEG_RED, HORIZON_OPTIONS,
                        render_filters, get_scope, get_horizon_hours,
-                       get_horizon_label, fig_theme, asset_uri)
+                       get_horizon_label, fig_theme)
 from ui import hierarchy
 from config import DEFAULT_SCENARIO
 from core import engine
@@ -11,18 +11,6 @@ from datetime import datetime
 
 
 def render():
-    _loading = None
-    if not st.session_state.get("dashboard_loaded", True):
-        logo = asset_uri("assets/steg_logo.png", "image/png")
-        _loading = st.empty()
-        _loading.markdown(
-            f'<div class="steg-loading-overlay">'
-            f'<img src="{logo}" alt="STEG">'
-            f'<div class="steg-loading-text">Chargement...</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
     st.markdown("""
     <div class="steg-subnav">
       <a href="#section-production">Production</a>
@@ -47,9 +35,10 @@ def render():
             return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
                                          force_weather=n > 0, username=u)
 
-        res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
-                                datetime.now().minute // 5, False,
-                                st.session_state["user"]["username"])
+        with st.spinner("Chargement..."):
+            res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
+                                    datetime.now().minute // 5, False,
+                                    st.session_state["user"]["username"])
 
         fut = res["future"]
         now = pd.Timestamp.now(tz="Africa/Tunis")
@@ -110,11 +99,6 @@ def render():
 
     st.markdown('<div id="section-production" class="section-anchor"></div>', unsafe_allow_html=True)
     production_dashboard()
-
-    if not st.session_state.get("dashboard_loaded", True):
-        st.session_state["dashboard_loaded"] = True
-        if _loading is not None:
-            _loading.empty()
 
     st.markdown('<div id="section-cible" class="section-anchor"></div>', unsafe_allow_html=True)
 

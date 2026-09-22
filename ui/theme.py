@@ -259,7 +259,7 @@ header[data-testid="stHeader"] {{ display: none !important; }}
 
 
 def steg_loading_css():
-    """Inject the CSS for the full-viewport loading overlay (pulsing STEG logo)."""
+    """Inject CSS to restyle Streamlit's spinner as a full-viewport loading overlay."""
     logo = asset_uri("assets/steg_logo.png", "image/png")
     st.markdown(f"""
 <style>
@@ -272,20 +272,31 @@ def steg_loading_css():
   from {{ opacity: 0; transform: translateY(8px); }}
   to   {{ opacity: 1; transform: translateY(0); }}
 }}
-.steg-loading-overlay {{
-  position: fixed; inset: 0; z-index: 9999;
-  background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+[data-testid="stSpinner"] {{
+  position: fixed !important; inset: 0 !important; z-index: 9999 !important;
+  background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%) !important;
+  display: flex !important; flex-direction: column !important;
+  align-items: center !important; justify-content: center !important;
+  margin: 0 !important; padding: 0 !important;
 }}
-.steg-loading-overlay img {{
-  width: 100px; height: auto; object-fit: contain;
-  animation: steg-pulse 1.5s ease-in-out infinite;
+[data-testid="stSpinner"] > div {{
+  display: flex !important; flex-direction: column !important;
+  align-items: center !important; justify-content: center !important;
 }}
-.steg-loading-overlay .steg-loading-text {{
-  color: rgba(255,255,255,0.85); font-size: 1rem;
-  margin-top: 18px; letter-spacing: 0.5px;
-  animation: steg-fadein 0.8s ease-out both;
+[data-testid="stSpinner"] svg {{
+  width: 100px !important; height: 100px !important;
+  animation: steg-pulse 1.5s ease-in-out infinite !important;
+  content: url("{logo}") !important;
+  fill: none !important;
+}}
+[data-testid="stSpinner"] svg circle,
+[data-testid="stSpinner"] svg path {{
+  display: none !important;
+}}
+[data-testid="stSpinner"] p {{
+  color: rgba(255,255,255,0.85) !important; font-size: 1rem !important;
+  margin-top: 18px !important; letter-spacing: 0.5px !important;
+  animation: steg-fadein 0.8s ease-out both !important;
 }}
 </style>
 """, unsafe_allow_html=True)
