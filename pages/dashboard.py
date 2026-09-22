@@ -1,7 +1,7 @@
 import streamlit as st
 from ui.theme import (STEG_BLUE, STEG_RED, HORIZON_OPTIONS,
                        render_filters, get_scope, get_horizon_hours,
-                       get_horizon_label, fig_theme)
+                       get_horizon_label, fig_theme, asset_uri)
 from ui import hierarchy
 from config import DEFAULT_SCENARIO
 from core import engine
