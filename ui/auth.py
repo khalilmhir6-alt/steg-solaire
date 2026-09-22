@@ -113,7 +113,7 @@ def _touch_canonical(username, role, full_name, region, scope):
         if (new_role, new_region, new_scope) != (cur_role, cur_region, cur_scope):
             c.execute("UPDATE users SET role=?, region=?, scope=? WHERE username=?",
                       (new_role, new_region, new_scope, username))
-            c.commit()
+    c.commit()
     c.close()
 
 
@@ -287,3 +287,83 @@ def update_password(username, new_password):
               (salt, _hash(new_password, salt), username))
     c.commit()
     c.close()
+
+
+# ---------------------------------------------------------------------------
+# User settings (default view + alert threshold overrides)
+# ---------------------------------------------------------------------------
+
+def _ensure_settings_table(c):
+    c.execute(
+        "CREATE TABLE IF NOT EXISTS user_settings ("
+        "username TEXT PRIMARY KEY,"
+        " default_region TEXT,"
+        " default_horizon TEXT,"
+        " ramp_yellow REAL,"
+        " ramp_red REAL,"
+        " ramp_window INTEGER"
+        ")"
+    )
+    c.commit()
+
+
+def get_settings(username):
+    c = _conn()
+    _ensure_settings_table(c)
+    row = c.execute(
+        "SELECT default_region, default_horizon, ramp_yellow, ramp_red, ramp_window"
+        " FROM user_settings WHERE username=?",
+        (username,),
+    ).fetchone()
+    c.close()
+    if row is None:
+        return {}
+    return {
+        "default_region": row[0],
+        "default_horizon": row[1],
+        "ramp_yellow": row[2],
+        "ramp_red": row[3],
+        "ramp_window": row[4],
+    }
+
+
+def save_settings(username, default_region=None, default_horizon=None,
+                  ramp_yellow=None, ramp_red=None, ramp_window=None):
+    c = _conn()
+    _ensure_settings_table(c)
+    existing = c.execute(
+        "SELECT default_region, default_horizon, ramp_yellow, ramp_red, ramp_window"
+        " FROM user_settings WHERE username=?",
+        (username,),
+    ).fetchone()
+    if existing:
+        dr = default_region if default_region is not None else existing[0]
+        dh = default_horizon if default_horizon is not None else existing[1]
+        ry = ramp_yellow if ramp_yellow is not None else existing[2]
+        rr = ramp_red if ramp_red is not None else existing[3]
+        rw = ramp_window if ramp_window is not None else existing[4]
+        c.execute(
+            "UPDATE user_settings SET default_region=?, default_horizon=?,"
+            " ramp_yellow=?, ramp_red=?, ramp_window=? WHERE username=?",
+            (dr, dh, ry, rr, rw, username),
+        )
+    else:
+        c.execute(
+            "INSERT INTO user_settings"
+            " (username, default_region, default_horizon, ramp_yellow, ramp_red, ramp_window)"
+            " VALUES (?,?,?,?,?,?)",
+            (username, default_region, default_horizon, ramp_yellow, ramp_red, ramp_window),
+        )
+    c.commit()
+    c.close()
+
+
+def effective_thresholds(username):
+    """Return (yellow, red, window) with user overrides or config defaults."""
+    from config import RAMP_YELLOW_THRESHOLD, RAMP_RED_THRESHOLD, RAMP_WINDOW_MINUTES
+    s = get_settings(username)
+    return (
+        s.get("ramp_yellow") or RAMP_YELLOW_THRESHOLD,
+        s.get("ramp_red") or RAMP_RED_THRESHOLD,
+        int(s.get("ramp_window") or RAMP_WINDOW_MINUTES),
+    )

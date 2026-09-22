@@ -60,14 +60,15 @@ def render_panel():
     )
 
     @st.cache_data(ttl=600, show_spinner=False)
-    def run_engine_cached(s, sc, h, n, r):
+    def run_engine_cached(s, sc, h, n, r, u):
         return engine.build_forecast(
-            s, sc, horizon_hours=h, force_ml=r, force_weather=n > 0
+            s, sc, horizon_hours=h, force_ml=r, force_weather=n > 0, username=u
         )
 
     res = run_engine_cached(
         scope, DEFAULT_SCENARIO, horizon_hours,
         datetime.now().minute // 5, False,
+        st.session_state["user"]["username"],
     )
 
     fut = res.get("future")

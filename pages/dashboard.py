@@ -31,10 +31,13 @@ def render():
         st.markdown(f"### Production solaire — {hierarchy.scope_label(scope)}  .  Horizon : **{horizon_label}**")
 
         @st.cache_data(ttl=600, show_spinner=False)
-        def run_engine_cached(s, sc, h, n, r):
-            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r, force_weather=n > 0)
+        def run_engine_cached(s, sc, h, n, r, u):
+            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
+                                         force_weather=n > 0, username=u)
 
-        res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours, datetime.now().minute // 5, False)
+        res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
+                                datetime.now().minute // 5, False,
+                                st.session_state["user"]["username"])
 
         fut = res["future"]
         now = pd.Timestamp.now(tz="Africa/Tunis")
@@ -109,11 +112,13 @@ def render():
         )
 
         @st.cache_data(ttl=600, show_spinner=False)
-        def run_engine_cached(s, sc, h, n, r):
-            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r, force_weather=n > 0)
+        def run_engine_cached(s, sc, h, n, r, u):
+            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
+                                         force_weather=n > 0, username=u)
 
         res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
-                         datetime.now().minute // 5, False)
+                         datetime.now().minute // 5, False,
+                         st.session_state["user"]["username"])
 
         fut = res["future"]
         now = pd.Timestamp.now(tz="Africa/Tunis")
@@ -137,11 +142,13 @@ def render():
         st.markdown(f"### Energie necessaire — {hierarchy.scope_label(scope)}")
 
         @st.cache_data(ttl=600, show_spinner=False)
-        def run_engine_cached(s, sc, h, n, r):
-            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r, force_weather=n > 0)
+        def run_engine_cached(s, sc, h, n, r, u):
+            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
+                                         force_weather=n > 0, username=u)
 
         res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
-                         datetime.now().minute // 5, False)
+                         datetime.now().minute // 5, False,
+                         st.session_state["user"]["username"])
 
         fut = res["future"]
         now = pd.Timestamp.now(tz="Africa/Tunis")
@@ -223,11 +230,13 @@ def render():
         st.markdown(f"### Comparaison Production / Consommation — {hierarchy.scope_label(scope)}  .  Horizon : **{horizon_label}**")
 
         @st.cache_data(ttl=600, show_spinner=False)
-        def run_engine_cached(s, sc, h, n, r):
-            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r, force_weather=n > 0)
+        def run_engine_cached(s, sc, h, n, r, u):
+            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
+                                         force_weather=n > 0, username=u)
 
         res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
-                         datetime.now().minute // 5, False)
+                         datetime.now().minute // 5, False,
+                         st.session_state["user"]["username"])
 
         fut = res["future"]
         if len(fut) == 0:

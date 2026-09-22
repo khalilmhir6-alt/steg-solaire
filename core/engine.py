@@ -91,7 +91,7 @@ def _append_actual_records(fut_log, scope, scenario, horizon_hours):
 
 def build_forecast(scope="tunisia", scenario=None, horizon_days=None,
                    horizon_hours=None, force_ml=False, force_weather=False,
-                   allow_mock=True):
+                   allow_mock=True, username=None):
     """Full forecast pipeline for a scope. Returns a rich dict for the UI."""
     hours = horizon_hours if horizon_hours is not None else (horizon_days or FORECAST_DAYS) * 24
     hours = min(max(float(hours), HORIZON_MIN_HOURS), HORIZON_MAX_HOURS)
@@ -143,7 +143,11 @@ def build_forecast(scope="tunisia", scenario=None, horizon_days=None,
     frame["net_mw"] = (frame["demand_mw"] - frame["inject_ml_mw"]).round(3)
 
     fut = frame.loc[win]
-    alerts = _merge_overlaps(detect_ramp_alerts(fut))
+    thresholds = None
+    if username:
+        from ui.auth import effective_thresholds
+        thresholds = effective_thresholds(username)
+    alerts = _merge_overlaps(detect_ramp_alerts(fut, thresholds=thresholds))
     _append_actual_records(fut, scope, scenario, hours)
 
     # energy on the forecast grid: sum(MW) * step-hours (15 min => /4)
@@ -200,13 +204,16 @@ def build_forecast(scope="tunisia", scenario=None, horizon_days=None,
             "bundle": bundle, "weather_meta": wmeta, "installed": installed}
 
 
-def detect_ramp_alerts(hourly):
+def detect_ramp_alerts(hourly, thresholds=None):
     """Ramp alert per spec: drop of X% over the next 60 min."""
     out = []
     inj = hourly["inject_ml_mw"]
     step_h = (inj.index[1] - inj.index[0]).total_seconds() / 3600.0 if len(inj) > 1 \
         else STEP_MINUTES / 60.0
-    lookahead = max(1, round(RAMP_WINDOW_MINUTES / 60.0 / step_h))
+    ramp_yellow = thresholds[0] if thresholds else RAMP_YELLOW_THRESHOLD
+    ramp_red = thresholds[1] if thresholds else RAMP_RED_THRESHOLD
+    ramp_window = thresholds[2] if thresholds else RAMP_WINDOW_MINUTES
+    lookahead = max(1, round(ramp_window / 60.0 / step_h))
     for i in range(len(inj) - lookahead):
         t = inj.index[i]
         nxt = inj.index[i + lookahead]
@@ -219,12 +226,12 @@ def detect_ramp_alerts(hourly):
         if ghi_t1 < 250:
             continue
         delta = (v0 - v1) / v0
-        if delta >= RAMP_RED_THRESHOLD:
+        if delta >= ramp_red:
             level, color = "RED", "rouge"
-            desc = "chute prévisionnelle sévère (>= 20% / 60 min)"
-        elif delta >= RAMP_YELLOW_THRESHOLD:
+            desc = f"chute prévisionnelle sévère (>= {ramp_red*100:.0f}% / {ramp_window} min)"
+        elif delta >= ramp_yellow:
             level, color = "YELLOW", "jaune"
-            desc = "chute prévisionnelle (>= 10% / 60 min)"
+            desc = f"chute prévisionnelle (>= {ramp_yellow*100:.0f}% / {ramp_window} min)"
         else:
             continue
         out.append({

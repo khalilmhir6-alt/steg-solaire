@@ -29,11 +29,13 @@ def render():
     horizon_hours = get_horizon_hours()
 
     @st.cache_data(ttl=600, show_spinner=False)
-    def run_engine_cached(s, sc, h, n, r):
-        return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r, force_weather=n > 0)
+    def run_engine_cached(s, sc, h, n, r, u):
+        return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
+                                     force_weather=n > 0, username=u)
 
     nonce = datetime.now().minute // 5
-    _res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours, nonce, False)
+    _res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours, nonce, False,
+                             st.session_state["user"]["username"])
     alerts = _res["alerts"]
     if not alerts:
         st.markdown(NORMAL_CARD, unsafe_allow_html=True)

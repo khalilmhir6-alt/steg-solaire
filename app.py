@@ -9,7 +9,7 @@ Run:  streamlit run app.py
 import streamlit as st
 from ui import auth
 from ui.theme import render_css, render_nav
-from pages import dashboard, alertes, admin, panneaux
+from pages import dashboard, alertes, admin, panneaux, parametres
 
 st.set_page_config(page_title="STEG Solaire", page_icon="assets/steg_favicon.png", layout="wide")
 
@@ -175,18 +175,32 @@ PAGES = [
 if ROLE == "technicien":
     PAGES = [p for p in PAGES if p is not PAGES[2]]
 
-pg = st.navigation(PAGES, position="hidden")
+PAGE_PARAMETRES = st.Page(parametres.render, title="Paramètres",
+                          icon=":material/settings:", url_path="parametres")
 
-# One unified top bar: brand left, page tabs right, inside a single blue bar.
-top_cols = st.columns([1.4, 1, 1, 1, 1])
+pg = st.navigation(PAGES + [PAGE_PARAMETRES], position="hidden")
+
+# Load saved defaults for the logged-in user.
+_settings = auth.get_settings(user.get("username", ""))
+if _settings.get("default_region") and "global_scope" not in st.session_state:
+    st.session_state["global_scope"] = _settings["default_region"]
+if _settings.get("default_horizon") and "global_horizon" not in st.session_state:
+    st.session_state["global_horizon"] = _settings["default_horizon"]
+
+# One unified top bar: brand left, page tabs center, gear icon far right.
+top_cols = st.columns([1, 1, 1, 1, 1, 0.5])
 with top_cols[0]:
     st.markdown(render_nav(), unsafe_allow_html=True)
-for col, page in zip(top_cols[1:], PAGES):
+for col, page in zip(top_cols[1:5], PAGES):
     with col:
         active = pg is page
         if st.button(page.title, key=f"nav_{page.url_path}",
                      type="primary" if active else "tertiary", width="stretch"):
             if not active:
                 st.switch_page(page)
+with top_cols[5]:
+    if st.button(":material/settings:", key="nav_parametres",
+                 type="tertiary", width="stretch"):
+        st.switch_page(PAGE_PARAMETRES)
 
 pg.run()
