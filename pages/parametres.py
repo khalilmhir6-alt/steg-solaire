@@ -11,9 +11,6 @@ from config import (
 
 
 def render():
-    if st.button(":material/arrow_back: Retour", key="param_back"):
-        st.switch_page("pages/dashboard.py")
-
     user = st.session_state.get("user", {})
     username = user.get("username", "")
     saved = auth.get_settings(username)
@@ -30,6 +27,40 @@ def render():
                        key="pf_role")
         st.text_input("Nom complet", value=user.get("full_name", ""),
                        disabled=True, key="pf_fullname")
+
+        saved_email = auth.get_email(username) or user.get("email") or ""
+        email_val = st.text_input(
+            "Email (notifications d'alerte)",
+            value=saved_email, key="pf_email",
+            help="Adresse utilisée pour recevoir les alertes par email.",
+        )
+
+        freq = saved.get("email_frequency") or "daily"
+        if freq not in auth.EMAIL_FREQUENCIES:
+            freq = "daily"
+        freq_labels = list(auth.EMAIL_FREQUENCY_LABELS.values())
+        freq_keys = list(auth.EMAIL_FREQUENCIES)
+        freq_idx = freq_keys.index(freq)
+        freq_label = st.selectbox(
+            "Fréquence des emails",
+            freq_labels,
+            index=freq_idx,
+            key="pf_email_freq",
+            help="À quelle fréquence vous souhaitez recevoir les alertes par email.",
+        )
+        new_freq = freq_keys[freq_labels.index(freq_label)]
+
+        if st.button("Enregistrer les notifications", key="pf_email_btn"):
+            email_val = email_val.strip()
+            if email_val and ("@" not in email_val or "." not in email_val):
+                st.error("Adresse email invalide.")
+            else:
+                auth.update_email(username, email_val)
+                auth.save_settings(username, email_frequency=new_freq)
+                if "user" in st.session_state:
+                    st.session_state["user"]["email"] = email_val or None
+                st.success("Notifications email enregistrées.")
+                st.rerun()
 
         st.markdown("**Changer le mot de passe**")
         pw1, pw2 = st.columns(2)

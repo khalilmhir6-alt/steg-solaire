@@ -58,16 +58,32 @@ def district_capacity_mw(district, scenario=None):
     return round(region_capacity_mw(region, scenario) * installs / reg_installs, 3)
 
 
+def _registered_panels_mw(parts):
+    """Sum of panels registered under this scope (kWc -> MW)."""
+    from ui import registry  # lazy: avoid import cycle
+
+    if parts == [NATIONAL_SLUG]:
+        rows = registry.list_panels()
+    else:
+        rows = registry.list_panels("/".join(parts))
+    return sum(float(r[3] or 0.0) for r in rows) / 1000.0
+
+
 def scope_capacity_mw(scope, scenario=None):
-    """Total installed MW covered by a scope string (e.g. 'nord/nabeul')."""
+    """Total installed MW covered by a scope string (e.g. 'nord/nabeul').
+
+    Baseline comes from the bulletin/scenario capacity; panels registered via
+    ui.registry (kWc) are added on top and converted to MW.
+    """
     parts = _parse_scope(scope)
     if parts == [NATIONAL_SLUG]:
         c = CAPACITY_SCENARIOS[scenario or DEFAULT_SCENARIO]
-        return round(sum(c.values()), 1)
-    region = parts[0]
-    if len(parts) == 1:
-        return region_capacity_mw(region, scenario)
-    return district_capacity_mw(parts[1], scenario)
+        baseline = round(sum(c.values()), 1)
+    elif len(parts) == 1:
+        baseline = region_capacity_mw(parts[0], scenario)
+    else:
+        baseline = district_capacity_mw(parts[1], scenario)
+    return baseline + _registered_panels_mw(parts)
 
 
 # Total PV installations across the whole country (sum over the bulletin's

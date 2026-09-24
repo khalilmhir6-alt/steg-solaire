@@ -40,6 +40,7 @@ def region_label(slug):
 
 
 def render_css():
+    gear_uri = asset_uri("assets/settings-gear.svg", "image/svg+xml")
     st.markdown(f"""
 <style>
 :root {{
@@ -47,8 +48,33 @@ def render_css():
   --steg-blue-dark: {STEG_BLUE_DARK};
   --steg-red: {STEG_RED};
 }}
-[data-testid="stAppViewContainer"] {{ background: #f4f7fc; }}
-[data-testid="stHeader"] {{ background: transparent; }}
+html, body {{
+  background: #f4f7fc !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-top: 0 !important;
+}}
+[data-testid="stAppViewContainer"], [data-testid="stMain"] {{
+  background: transparent !important;
+  margin-top: 0 !important; padding-top: 0 !important;
+}}
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMainBlockContainer"],
+[data-testid="block-container"] {{
+  margin-top: 0 !important; padding-top: 0 !important;
+}}
+[data-testid="stAppViewContainer"] {{
+  background: #f4f7fc !important;
+}}
+[data-testid="stAppViewContainer"]:has(.steg-login),
+html:has(.steg-login), body:has(.steg-login),
+[data-testid="stAppViewContainer"]:has(.steg-login) [data-testid="stMain"] {{
+  background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%) !important;
+}}
+[data-testid="stHeader"] {{ background: transparent; display: none !important; height: 0 !important; }}
+[data-testid="stElementContainer"]:has(> [data-testid="stMarkdownContainer"] > style) {{
+  display: none !important;
+}}
 h1, h2, h3, h4 {{ color: {STEG_BLUE}; }}
 .stMarkdown h3 {{
   background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%);
@@ -87,16 +113,72 @@ button[kind="primary"]:hover, [data-testid="stBaseButton-primary"]:hover {{
   background: rgba(11, 61, 145, 0.08) !important;
 }}
 [data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) {{
-  position: sticky; top: 0; z-index: 9999;
+  position: sticky !important; top: 0 !important; z-index: 9999;
   align-items: center;
   background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%);
   padding: 0 24px; height: 68px;
   box-shadow: 0 2px 8px rgba(11,61,145,0.25);
+  margin-top: 0 !important; margin-bottom: 0 !important;
+  padding-top: 0 !important;
   margin-left: calc(-50vw + 50%) !important;
   margin-right: calc(-50vw + 50%) !important;
   width: 100vw !important;
   max-width: 100vw !important;
   border-radius: 0 !important;
+}}
+.stHorizontalBlock:has(.steg-topbar-brand) > [data-testid="stColumn"]:last-child {{
+  justify-content: flex-end;
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] {{
+  background: transparent url("{gear_uri}") center / 22px 22px no-repeat !important;
+  border: none !important;
+  border-radius: 0 !important;
+  width: 40px !important; height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  box-shadow: none !important;
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] span,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] div,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] p {{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  font-size: 0 !important;
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] span,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] div,
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] p {{
+  background: none !important;
+  border: none !important;
+  width: auto !important; height: auto !important;
+  min-height: 0 !important;
+  color: transparent !important;
+  font-size: 0 !important;
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"] svg {{
+  display: none !important;
+}}
+[data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand)
+  > [data-testid="stColumn"]:last-child [data-testid="stBaseButton-tertiary"]:hover {{
+  background: transparent url("{gear_uri}") center / 22px 22px no-repeat !important;
+  border: none !important;
+  box-shadow: none !important;
 }}
 [data-testid="stMainBlockContainer"] .stHorizontalBlock:has(.steg-topbar-brand) [data-testid="stColumn"] {{
   display: flex; align-items: center;
@@ -146,10 +228,13 @@ button[kind="primary"]:hover, [data-testid="stBaseButton-primary"]:hover {{
   }}
   [data-testid="stTextInputField"] input, [data-testid="stNumberInputField"] input {{
     background: #ffffff !important; color: #1f2a44 !important;
+    -webkit-text-fill-color: #1f2a44 !important;
+    caret-color: #1f2a44 !important;
     font-weight: 500 !important; border: none !important;
     box-shadow: none !important; border-radius: 8px !important;
     width: 100% !important; height: 44px !important;
     padding: 0 12px !important; box-sizing: border-box !important;
+    opacity: 1 !important;
   }}
   [data-testid="stTextArea"] textarea {{
     background: #ffffff !important; color: #1f2a44 !important;
@@ -211,13 +296,19 @@ button[kind="primary"]:hover, [data-testid="stBaseButton-primary"]:hover {{
 [data-testid="stDataFrame"] {{
   border: 1px solid #dbe4f2; border-radius: 10px; overflow: hidden;
 }}
-header[data-testid="stHeader"] {{ display: none !important; }}
+[data-testid="stHeader"] {{ display: none !important; height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }}
 [data-testid="stToolbar"] {{ display: none !important; }}
 #MainMenu {{ visibility: hidden; }}
 [data-testid="stAppViewBlockContainer"] {{ padding-top: 0 !important; margin-top: 0 !important; }}
 [data-testid="stMainBlockContainer"] {{ padding-top: 0 !important; margin-top: 0 !important; }}
 [data-testid="block-container"] {{ padding-top: 0 !important; margin-top: 0 !important; }}
-[data-testid="stMain"] {{ padding-top: 0 !important; }}
+[data-testid="stMain"] {{ padding-top: 0 !important; margin-top: 0 !important; }}
+[data-testid="stMainBlockContainer"] > *:first-child {{
+  margin-top: 0 !important; padding-top: 0 !important;
+}}
+.stApp, #root {{
+  margin: 0 !important; padding-top: 0 !important;
+}}
 .steg-topbar-brand {{
   display: flex; align-items: center; gap: 10px;
   line-height: 1;
@@ -259,37 +350,95 @@ header[data-testid="stHeader"] {{ display: none !important; }}
 
 
 def steg_loading_css():
-    """Inject CSS for the full-viewport loading overlay (pulsing STEG logo)."""
-    logo = asset_uri("assets/steg_logo.png", "image/png")
+    """White splash: logo gleams over a full-screen white card.
+
+    - Visible on every app view (not on the login page), minimum ~2.6 s,
+      then fades out automatically.
+    - While a spinner is running (dashboard building), held fully visible
+      for as long as the spinner lasts — even if that exceeds the delay.
+    - Questions in the assistant never trigger it (fragment reruns only).
+    """
+    logo = asset_uri("assets/steg_logo_mark.png", "image/png")
     st.markdown(f"""
 <style>
-@keyframes steg-pulse {{
-  0%   {{ transform: translateX(-12px); }}
-  25%  {{ transform: translateX(12px); }}
-  50%  {{ transform: translateX(-8px); }}
-  75%  {{ transform: translateX(8px); }}
-  100% {{ transform: translateX(-12px); }}
+[data-testid="stSpinner"] {{
+  position: fixed !important; inset: 0 !important; z-index: 9999 !important;
+  background: #ffffff !important;
+  animation: none !important;
 }}
-@keyframes steg-fadein {{
-  from {{ opacity: 0; transform: translateY(8px); }}
-  to   {{ opacity: 1; transform: translateY(0); }}
+[data-testid="stSpinner"] svg,
+[data-testid="stSpinner"] [data-testid="stStatusWidget"],
+[data-testid="stSpinner"] .stSpinner-bubble,
+[data-testid="stSpinner"] p {{
+  display: none !important;
 }}
-.steg-loading-overlay {{
-  position: fixed; inset: 0; z-index: 9999;
-  background: linear-gradient(135deg, {STEG_BLUE} 0%, #1b5ec1 100%);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+.steg-splash {{
+  position: fixed !important; inset: 0 !important; z-index: 10000 !important;
+  display: none !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #ffffff !important;
+  margin: 0 !important; padding: 0 !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  animation: steg-splash-out 0.45s ease 2.6s forwards;
 }}
-.steg-loading-overlay img {{
-  width: 100px; height: auto; object-fit: contain;
-  animation: steg-pulse 1.2s ease-in-out infinite;
+/* App views (hors login) : la page de chargement s'affiche au chargement. */
+html:not(:has(.steg-login)) .steg-splash {{
+  display: flex !important;
 }}
-.steg-loading-overlay .steg-loading-text {{
-  color: rgba(255,255,255,0.85); font-size: 1rem;
-  margin-top: 18px; letter-spacing: 0.5px;
-  animation: steg-fadein 0.8s ease-out both;
+/* Tant que le contenu se construit, le splash reste entièrement visible. */
+html:has([data-testid="stSpinner"]) .steg-splash {{
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}}
+@keyframes steg-splash-out {{
+  to {{ opacity: 0; visibility: hidden; }}
+}}
+.steg-splash img {{
+  display: block !important;
+  width: 64px !important;
+  height: auto !important;
+  max-width: 40vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  image-rendering: auto !important;
+  opacity: 1;
+  animation: steg-gleam 1.6s ease-in-out infinite;
+}}
+@keyframes steg-gleam {{
+  0% {{
+    opacity: 0.4;
+    filter: brightness(0.95);
+    transform: scale(0.98);
+  }}
+  45% {{
+    opacity: 1;
+    filter: brightness(1.2)
+      drop-shadow(0 0 14px rgba(255, 255, 255, 0.95))
+      drop-shadow(0 0 22px rgba(11, 61, 145, 0.45));
+    transform: scale(1);
+  }}
+  70% {{
+    opacity: 1;
+    filter: brightness(1.08)
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.7))
+      drop-shadow(0 0 14px rgba(11, 61, 145, 0.3));
+    transform: scale(1);
+  }}
+  100% {{
+    opacity: 1;
+    filter: none;
+    transform: scale(1);
+  }}
 }}
 </style>
+<div class="steg-splash" aria-hidden="true">
+  <img src="{logo}" alt="STEG" width="64" height="112">
+</div>
 """, unsafe_allow_html=True)
 
 

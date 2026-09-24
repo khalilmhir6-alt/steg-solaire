@@ -62,6 +62,8 @@ def render():
     with st.form("add_admin_form"):
         auser = st.text_input("Identifiant", key="admin_new_user")
         apwd = st.text_input("Mot de passe", type="password", key="admin_new_pwd")
+        aemail = st.text_input("Email (optionnel)", key="admin_new_email",
+                               help="Utilisé pour les notifications d'alerte.")
         submit = st.form_submit_button("Creer le compte", type="primary")
 
     if submit:
@@ -80,7 +82,8 @@ def render():
                     auth.ROLE_TECHNICIAN: f"Technicien {hierarchy.scope_label(target_scope)}",
                 }[role]
                 auth.add_user(auser.strip(), apwd, role, full_name=full_name,
-                              region=areg, scope=target_scope)
+                              region=areg, scope=target_scope,
+                              email=aemail.strip() or None)
                 st.success(f"Compte **{auser.strip()}** cree ({role_label}) pour "
                            f"{hierarchy.scope_label(target_scope)}.")
 
@@ -97,11 +100,12 @@ def render():
         return
 
     data = []
-    for username, role, full_name, uregion, uscope in rows:
+    for username, role, full_name, uregion, uscope, uemail in rows:
         data.append({
             "Identifiant": username,
             "Role": ROLE_LABELS.get(role, role),
             "Nom": full_name or "",
+            "Email": uemail or "",
             "Perimetre": hierarchy.scope_label(uscope or uregion),
         })
 

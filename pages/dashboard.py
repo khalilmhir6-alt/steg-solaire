@@ -10,25 +10,40 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 
-def render():
-    if not st.session_state.get("dashboard_loaded"):
-        logo = asset_uri("assets/steg_logo.png", "image/png")
-        st.markdown(
-            f'<div class="steg-loading-overlay">'
-            f'<img src="{logo}" alt="STEG">'
-            f'<div class="steg-loading-text">Chargement...</div>'
-            f'</div>',
-            unsafe_allow_html=True,
+def _maybe_notify_ramp_alerts(scope, alerts):
+    """Email ramp alerts to scoped users, rate-limited by their frequency."""
+    if not alerts:
+        return
+    try:
+        import notify
+        # one message per run: newest/highest severity wins
+        reds = [a for a in alerts if str(a.get("level", "")).upper() == "RED"]
+        yellows = [a for a in alerts if str(a.get("level", "")).upper() == "YELLOW"]
+        top = (reds or yellows)[0]
+        level = "red" if reds else "yellow"
+        detail = (
+            f"{top.get('description', '')} — de {top.get('v0_mw')} MW à "
+            f"{top.get('v1_mw')} MW ({top.get('drop_pct')}%), "
+            f"de {top.get('t0')} à {top.get('t1')}."
         )
-        st.session_state["dashboard_loaded"] = True
-        st.rerun()
+        notify.notify_scope_alert(scope, level, detail)
+    except Exception:
+        pass
 
+
+def render():
+    with st.spinner(""):
+        _render_dashboard_content()
+
+
+def _render_dashboard_content():
     st.markdown("""
     <div class="steg-subnav">
       <a href="#section-production">Production</a>
+      <a href="#section-prevue">Production prévue</a>
+      <a href="#section-prevision-reel">Prevision vs Reel</a>
       <a href="#section-consommation">Consommation</a>
       <a href="#section-comparaison">Comparaison</a>
-      <a href="#section-prevision-reel">Prevision vs Reel</a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -45,11 +60,13 @@ def render():
         @st.cache_data(ttl=600, show_spinner=False)
         def run_engine_cached(s, sc, h, n, r, u):
             return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
-                                         force_weather=n > 0, username=u)
+                                         force_weather=False, username=u)
 
         res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
                                 datetime.now().minute // 5, False,
                                 st.session_state["user"]["username"])
+
+        _maybe_notify_ramp_alerts(scope, res.get("alerts") or [])
 
         fut = res["future"]
         now = pd.Timestamp.now(tz="Africa/Tunis")
@@ -126,7 +143,7 @@ def render():
         @st.cache_data(ttl=600, show_spinner=False)
         def run_engine_cached(s, sc, h, n, r, u):
             return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
-                                         force_weather=n > 0, username=u)
+                                         force_weather=False, username=u)
 
         res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
                          datetime.now().minute // 5, False,
@@ -140,10 +157,97 @@ def render():
             st.info("Aucune prevision future disponible.")
             return
 
-        # Same reference as the comparison panel: 4 % of the whole scope demand,
-        # night included (the annual anchor: ~820 GWh ≈ 4 % de ~19 400 GWh).
         dm, target_mw, day_mask = hierarchy.scope_day_reference(win)
 
+
+    @st.fragment(run_every=300)
+    def production_prevue_dashboard():
+        scope = get_scope()
+        horizon_hours = get_horizon_hours()
+        horizon_label = get_horizon_label()
+
+        st.markdown(f"### Production prévue — {hierarchy.scope_label(scope)}")
+
+        @st.cache_data(ttl=600, show_spinner=False)
+        def run_engine_cached(s, sc, h, n, r, u):
+            return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
+                                         force_weather=False, username=u)
+
+        res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
+                         datetime.now().minute // 5, False,
+                         st.session_state["user"]["username"])
+
+        fut = res["future"]
+        now = pd.Timestamp.now(tz="Africa/Tunis")
+        now_disp = now.strftime("%H:%M:%S")
+
+        last_run = st.session_state.get("prevue_last_run")
+        next_refresh = (last_run + pd.Timedelta(seconds=300)) if last_run is not None \
+            else (now + pd.Timedelta(seconds=300))
+        st.session_state["prevue_last_run"] = now
+
+        win = fut[fut.index > now]
+
+        if len(win) > 0:
+            t0 = win.index[0]
+            t1 = win.index[-1]
+            pw = win["inject_phys_mw"]
+
+            if len(win) <= 2:
+                energy = float(((pw.iloc[0] + pw.iloc[-1]) / 2)
+                               * (t1 - t0).total_seconds() / 3600.0) if len(pw) >= 2 \
+                    else float(pw.iloc[0] * 0.25)
+            else:
+                energy = float(pw.sum() * 0.25)
+
+            peak_mw = float(pw.max())
+            peak_t = pw.idxmax()
+
+            st.markdown(
+                f"""
+                <div style="background:linear-gradient(135deg,#d7263d,#a41c2e);border-radius:16px;
+                     padding:22px 28px;box-shadow:0 4px 16px rgba(215,38,61,0.25);color:#fff;">
+                  <div style="font-size:15px;font-weight:600;opacity:.92">Production prévue de {t0:%H:%M} a {t1:%H:%M}</div>
+                  <div style="font-size:44px;font-weight:700;line-height:1.15">{energy:.2f} MWh</div>
+                  <div style="font-size:14px;opacity:.9">Pic : {peak_mw:.1f} MW a {peak_t:%H:%M}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=win.index, y=pw,
+                mode="lines+markers", name="Production prévue",
+                line=dict(color=STEG_RED, width=4),
+                marker=dict(size=6, color=STEG_RED),
+                fill="tozeroy", fillcolor="rgba(215,38,61,0.15)",
+            ))
+            fig_theme(fig, 330, margin=dict(l=10, r=10, t=10, b=10))
+            fig.update_layout(xaxis_title="", yaxis_title="MW", showlegend=False)
+            if horizon_hours <= 1.0:
+                fig.update_layout(
+                    xaxis=dict(tickformat="%H:%M", dtick=900 * 1000),
+                    yaxis=dict(range=[0, max(pw.max() * 1.3, 10)]),
+                )
+            st.plotly_chart(fig, width="stretch")
+        else:
+            st.info("Aucune prevision future disponible.")
+
+        st.caption(
+            f"Heure actuelle : **{now_disp}**  .  Prochaine actualisation : **{next_refresh:%H:%M:%S}**"
+        )
+
+    st.markdown('<div id="section-prevue" class="section-anchor"></div>', unsafe_allow_html=True)
+    production_prevue_dashboard()
+
+    @st.fragment(run_every=300)
+    def prevision_reel_section():
+        from pages import prevision_reel
+        prevision_reel.render_panel()
+
+    st.markdown('<div id="section-prevision-reel" class="section-anchor"></div>', unsafe_allow_html=True)
+    prevision_reel_section()
 
     @st.fragment(run_every=300)
     def demand_dashboard():
@@ -156,7 +260,7 @@ def render():
         @st.cache_data(ttl=600, show_spinner=False)
         def run_engine_cached(s, sc, h, n, r, u):
             return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
-                                         force_weather=n > 0, username=u)
+                                         force_weather=False, username=u)
 
         res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
                          datetime.now().minute // 5, False,
@@ -217,11 +321,6 @@ def render():
                     yaxis=dict(range=[0, max(dm.max() * 1.3, 10)]),
                 )
             st.plotly_chart(fig, width="stretch")
-
-            st.caption(
-                "Calcul : profil horaire STEG x part regionale "
-                "x (1 + 2,5 %/C estime au-dessus de 24 C) x weekend (0,85)"
-            )
         else:
             st.info("Aucune prevision future disponible.")
 
@@ -229,6 +328,7 @@ def render():
             f"Heure actuelle : **{now_disp}**  .  Prochaine actualisation : **{next_refresh:%H:%M:%S}**"
         )
 
+    st.markdown('<div id="section-consommation" class="section-anchor"></div>', unsafe_allow_html=True)
     demand_dashboard()
 
     st.markdown('<div id="section-comparaison" class="section-anchor"></div>', unsafe_allow_html=True)
@@ -244,7 +344,7 @@ def render():
         @st.cache_data(ttl=600, show_spinner=False)
         def run_engine_cached(s, sc, h, n, r, u):
             return engine.build_forecast(s, sc, horizon_hours=h, force_ml=r,
-                                         force_weather=n > 0, username=u)
+                                         force_weather=False, username=u)
 
         res = run_engine_cached(scope, DEFAULT_SCENARIO, horizon_hours,
                          datetime.now().minute // 5, False,
@@ -255,7 +355,6 @@ def render():
             st.info("Aucune prevision future disponible.")
             return
 
-        # Same window as the two dashboards above: now -> horizon end.
         now = pd.Timestamp.now(tz="Africa/Tunis")
         win = fut[fut.index > now]
 
@@ -270,7 +369,6 @@ def render():
         e_dm_day = float(dm.to_numpy()[day_mask].sum() * 0.25)
         day_cover = (e_pv_day / e_dm_day * 100) if e_dm_day > 0 else 0.0
 
-        # Nombre de pas ou la production ciblee (4 % de la demande).
         n_ok = int((pv >= target_mw).sum())
         n_tot = int(len(pv))
         peak_pv = float(pv.max())
@@ -309,11 +407,3 @@ def render():
         )
 
     comparison_dashboard()
-
-    @st.fragment(run_every=300)
-    def prevision_reel_section():
-        from pages import prevision_reel
-        prevision_reel.render_panel()
-
-    prevision_reel_section()
-

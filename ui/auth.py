@@ -45,9 +45,10 @@ def _conn():
     c.execute(
         "CREATE TABLE IF NOT EXISTS users ("
         "username TEXT PRIMARY KEY, role TEXT NOT NULL, salt TEXT NOT NULL,"
-        "pwd_hash TEXT NOT NULL, full_name TEXT, region TEXT, scope TEXT)"
+        "pwd_hash TEXT NOT NULL, full_name TEXT, region TEXT, scope TEXT,"
+        "email TEXT)"
     )
-    for col in ("region", "scope"):
+    for col in ("region", "scope", "email"):
         try:
             c.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
         except sqlite3.OperationalError:
@@ -157,14 +158,15 @@ def _seed_missing_or_overwrite(username, overwrite):
 
 
 def add_user(username, password, role="operator", full_name=None,
-             region=None, scope=None):
+             region=None, scope=None, email=None):
     c = _conn()
     salt = secrets.token_hex(8)
     scope = scope or region
     c.execute(
         "INSERT OR REPLACE INTO users (username, role, salt, pwd_hash, full_name,"
-        " region, scope) VALUES (?,?,?,?,?,?,?)",
-        (username, role, salt, _hash(password, salt), full_name, region, scope),
+        " region, scope, email) VALUES (?,?,?,?,?,?,?,?)",
+        (username, role, salt, _hash(password, salt), full_name, region, scope,
+         email or None),
     )
     c.commit()
     c.close()
@@ -180,25 +182,45 @@ def delete_user(username):
 def list_users():
     c = _conn()
     rows = c.execute(
-        "SELECT username, role, full_name, region, scope FROM users ORDER BY username"
+        "SELECT username, role, full_name, region, scope, email FROM users"
+        " ORDER BY username"
     ).fetchall()
     c.close()
     return rows
 
 
+def get_email(username):
+    c = _conn()
+    row = c.execute(
+        "SELECT email FROM users WHERE username=?", (username,)
+    ).fetchone()
+    c.close()
+    return row[0] if row else None
+
+
+def update_email(username, email):
+    c = _conn()
+    c.execute("UPDATE users SET email=? WHERE username=?",
+              (email or None, username))
+    c.commit()
+    c.close()
+
+
 def verify(username, password):
     c = _conn()
     row = c.execute(
-        "SELECT role, salt, pwd_hash, full_name, region, scope FROM users WHERE username=?",
+        "SELECT role, salt, pwd_hash, full_name, region, scope, email"
+        " FROM users WHERE username=?",
         (username,),
     ).fetchone()
     c.close()
     if row is None:
         return None
-    role, salt, expected, full_name, region, scope = row
+    role, salt, expected, full_name, region, scope, email = row
     if secrets.compare_digest(_hash(password, salt), expected):
         return {"username": username, "role": role, "full_name": full_name,
-                "region": region or _NATIONAL, "scope": scope or region or _NATIONAL}
+                "region": region or _NATIONAL, "scope": scope or region or _NATIONAL,
+                "email": email}
     return None
 
 
@@ -301,17 +323,33 @@ def _ensure_settings_table(c):
         " default_horizon TEXT,"
         " ramp_yellow REAL,"
         " ramp_red REAL,"
-        " ramp_window INTEGER"
+        " ramp_window INTEGER,"
+        " email_frequency TEXT"
         ")"
     )
+    try:
+        c.execute("ALTER TABLE user_settings ADD COLUMN email_frequency TEXT")
+    except sqlite3.OperationalError:
+        pass
     c.commit()
+
+
+EMAIL_FREQUENCIES = ("instant", "hourly", "daily", "weekly", "off")
+EMAIL_FREQUENCY_LABELS = {
+    "instant": "À chaque alerte",
+    "hourly": "Toutes les heures",
+    "daily": "Une fois par jour",
+    "weekly": "Une fois par semaine",
+    "off": "Jamais",
+}
 
 
 def get_settings(username):
     c = _conn()
     _ensure_settings_table(c)
     row = c.execute(
-        "SELECT default_region, default_horizon, ramp_yellow, ramp_red, ramp_window"
+        "SELECT default_region, default_horizon, ramp_yellow, ramp_red,"
+        " ramp_window, email_frequency"
         " FROM user_settings WHERE username=?",
         (username,),
     ).fetchone()
@@ -324,15 +362,18 @@ def get_settings(username):
         "ramp_yellow": row[2],
         "ramp_red": row[3],
         "ramp_window": row[4],
+        "email_frequency": row[5] or "daily",
     }
 
 
 def save_settings(username, default_region=None, default_horizon=None,
-                  ramp_yellow=None, ramp_red=None, ramp_window=None):
+                  ramp_yellow=None, ramp_red=None, ramp_window=None,
+                  email_frequency=None):
     c = _conn()
     _ensure_settings_table(c)
     existing = c.execute(
-        "SELECT default_region, default_horizon, ramp_yellow, ramp_red, ramp_window"
+        "SELECT default_region, default_horizon, ramp_yellow, ramp_red,"
+        " ramp_window, email_frequency"
         " FROM user_settings WHERE username=?",
         (username,),
     ).fetchone()
@@ -342,17 +383,21 @@ def save_settings(username, default_region=None, default_horizon=None,
         ry = ramp_yellow if ramp_yellow is not None else existing[2]
         rr = ramp_red if ramp_red is not None else existing[3]
         rw = ramp_window if ramp_window is not None else existing[4]
+        ef = email_frequency if email_frequency is not None else existing[5]
         c.execute(
             "UPDATE user_settings SET default_region=?, default_horizon=?,"
-            " ramp_yellow=?, ramp_red=?, ramp_window=? WHERE username=?",
-            (dr, dh, ry, rr, rw, username),
+            " ramp_yellow=?, ramp_red=?, ramp_window=?, email_frequency=?"
+            " WHERE username=?",
+            (dr, dh, ry, rr, rw, ef, username),
         )
     else:
         c.execute(
             "INSERT INTO user_settings"
-            " (username, default_region, default_horizon, ramp_yellow, ramp_red, ramp_window)"
-            " VALUES (?,?,?,?,?,?)",
-            (username, default_region, default_horizon, ramp_yellow, ramp_red, ramp_window),
+            " (username, default_region, default_horizon, ramp_yellow,"
+            " ramp_red, ramp_window, email_frequency)"
+            " VALUES (?,?,?,?,?,?,?)",
+            (username, default_region, default_horizon, ramp_yellow,
+             ramp_red, ramp_window, email_frequency or "daily"),
         )
     c.commit()
     c.close()

@@ -15,13 +15,6 @@ def _scope_options(user):
 def render():
     user = st.session_state.get("user")
 
-    st.markdown("""
-    <div class="steg-subnav">
-      <a href="#section-panneaux-form">Formulaire</a>
-      <a href="#section-panneaux-list">Panneaux enregistres</a>
-    </div>
-    """, unsafe_allow_html=True)
-
     render_filters()
 
     opts = _scope_options(user)

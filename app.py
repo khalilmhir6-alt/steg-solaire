@@ -82,13 +82,20 @@ def login_ui():
       border: 1px solid #0b3d91 !important;
     }
     [data-testid="stAppViewContainer"]:has(.steg-login) [data-testid="stTextInputField"] input,
-    [data-testid="stAppViewContainer"]:has(.steg-login) [data-testid="stTextInputBase"] input {
+    [data-testid="stAppViewContainer"]:has(.steg-login) [data-testid="stTextInputBase"] input,
+    [data-testid="stAppViewContainer"]:has(.steg-login) input {
       background: #ffffff !important; color: #1f2a44 !important;
+      -webkit-text-fill-color: #1f2a44 !important;
+      caret-color: #1f2a44 !important;
       font-weight: 500 !important; border-radius: 8px !important;
       width: 100% !important; height: 44px !important;
       padding: 0 12px !important; font-size: 0.95rem !important;
       box-shadow: none !important; border: none !important;
-      box-sizing: border-box !important;
+      box-sizing: border-box !important; opacity: 1 !important;
+    }
+    [data-testid="stAppViewContainer"]:has(.steg-login) input::placeholder {
+      color: #8a94a8 !important; -webkit-text-fill-color: #8a94a8 !important;
+      opacity: 1 !important;
     }
     [data-testid="stAppViewContainer"]:has(.steg-login) [data-testid="stTextInputField"] button {
       background: #ffffff !important; border: none !important;
@@ -128,6 +135,12 @@ def login_ui():
     }
     [data-testid="stAppViewContainer"]:has(.steg-login) .steg-login-logo img {
       width: auto; height: 90px; object-fit: contain;
+      image-rendering: auto;
+      image-rendering: crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translateZ(0);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -135,7 +148,7 @@ def login_ui():
     logo = asset_uri("assets/steg_logo.png", "image/png")
     with st.form("login"):
         st.markdown(
-            f'<div class="steg-login-logo"><img src="{logo}" alt="STEG""></div>',
+            f'<div class="steg-login-logo"><img src="{logo}" alt="STEG"></div>',
             unsafe_allow_html=True)
         st.markdown("## STEG Solaire")
         st.caption("Plateforme de prévision PV & pilotage de l'injection")
@@ -148,7 +161,6 @@ def login_ui():
         if user:
             st.session_state["user"] = user
             st.session_state["global_scope"] = auth.scope_of(user)
-            st.session_state["dashboard_loaded"] = False
             st.rerun()
         else:
             st.error("Identifiants invalides.")
@@ -201,10 +213,13 @@ for col, page in zip(top_cols[1:5], PAGES):
             if not active:
                 st.switch_page(page)
 with top_cols[5]:
-    if st.button(":material/settings:", key="nav_parametres",
-                 type="tertiary", width="stretch"):
+    if st.button("", key="nav_parametres", type="tertiary",
+                 help="Paramètres"):
         st.switch_page(PAGE_PARAMETRES)
 
 pg.run()
 
 st.markdown(render_footer(), unsafe_allow_html=True)
+
+from ui.assistant import render as render_assistant
+render_assistant(user)

@@ -121,14 +121,14 @@ def _fetch_live():
             "hourly": ",".join(WEATHER_VARIABLES),
             "timezone": "UTC",
             "past_days": ARCHIVE_DAYS,
-        }, timeout=(5, 10)),
+        }, timeout=(3, 5)),
         # forecast
         requests.get(OPEN_METEO_URL, params={
             "latitude": LATITUDE, "longitude": LONGITUDE,
             "hourly": ",".join(WEATHER_VARIABLES),
             "forecast_days": 7,
             "timezone": TIMEZONE,
-        }, timeout=(5, 10)),
+        }, timeout=(3, 5)),
     ]
     for r in responses:
         r.raise_for_status()
